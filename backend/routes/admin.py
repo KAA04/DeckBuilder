@@ -53,3 +53,27 @@ def import_cards():
         return jsonify({"error": "Some cards already exist.", "errors": duplicates}), 409
     result = g.supabase.table("cards").insert(valid_rows).execute()
     return jsonify({"imported": len(result.data or [])}), 201
+
+
+@admin_bp.post("/cards/import-one")
+@require_admin
+def import_one_card():
+    row = request.get_json(silent=True) or {}
+    errors = validate_card_row(row, 1)
+    if errors:
+        return jsonify({"error": "Fix the validation errors before importing.", "errors": [{"row": 1, "errors": errors}]}), 422
+
+    card = normalize_card_row(row)
+    existing = (
+        g.supabase.table("cards")
+        .select("id")
+        .eq("set_name", card["set_name"])
+        .eq("numer", card["numer"])
+        .limit(1)
+        .execute()
+    )
+    if existing.data:
+        return jsonify({"error": "A card with this set name and number already exists."}), 409
+
+    result = g.supabase.table("cards").insert(card).execute()
+    return jsonify({"imported": len(result.data or [])}), 201
