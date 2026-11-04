@@ -26,4 +26,4 @@ To create the first admin, register a user, then set that user's `profiles.role`
 
 ## CSV import
 
-Required columns: `name,type,set_name,numer`. Optional columns: `text,color1,color2,health,power,defense,image_url`. Enum values must match the schema, including the existing spelling `SPELL_INTERUPT`.
+Required columns: `name,type,set_name,number`. Optional columns: `text,color1,color2,health,power,defense,cost,image_url`. Numeric values must be non-negative. `defense` is required for non-spell cards and must be blank for `SPELL_MAIN` and `SPELL_INTERUPT`. Enum values must match the schema, including the existing spelling `SPELL_INTERUPT`.

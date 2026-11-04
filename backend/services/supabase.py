@@ -51,10 +51,11 @@ def require_admin(handler):
             g.supabase.table("profiles")
             .select("role")
             .eq("id", g.user.id)
-            .maybe_single()
+            .limit(1)
             .execute()
         )
-        if not profile.data or profile.data.get("role") != "ADMIN":
+        profile_data = profile.data[0] if profile.data else None
+        if not profile_data or profile_data.get("role") != "ADMIN":
             return jsonify({"error": "Administrator access is required."}), 403
         return handler(*args, **kwargs)
 

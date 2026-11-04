@@ -11,8 +11,9 @@ export interface Card {
   health: number | null
   power: number | null
   defense: number | null
+  cost: number | null
   set_name: string
-  numer: number
+  number: number
   image_url: string | null
 }
 

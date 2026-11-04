@@ -1,11 +1,11 @@
 COLORS = {"RED", "PURPLE", "BLUE", "GREEN", "YELLOW"}
 TYPES = {"LEADER", "CREATURE", "HABITAT", "TRINKET", "SPELL_MAIN", "SPELL_INTERUPT"}
-SORTS = {"name", "type", "set_name", "numer"}
+SORTS = {"name", "type", "set_name", "number"}
 
 
 def validate_card_row(row: dict, row_number: int) -> list[str]:
     errors = []
-    required = ("name", "type", "set_name", "numer")
+    required = ("name", "type", "set_name", "number")
     for field in required:
         if not str(row.get(field, "")).strip():
             errors.append(f"{field} is required")
@@ -16,19 +16,32 @@ def validate_card_row(row: dict, row_number: int) -> list[str]:
         value = str(row.get(field, "")).strip().upper()
         if value and value not in COLORS:
             errors.append(f"{field} must be one of: {', '.join(sorted(COLORS))}")
-    for field in ("numer", "health", "power", "defense"):
+    for field in ("number", "health", "power", "defense", "cost"):
         value = str(row.get(field, "")).strip()
         if value:
             try:
-                int(value)
+                if int(value) < 0:
+                    errors.append(f"{field} must not be negative")
             except ValueError:
                 errors.append(f"{field} must be an integer")
-    if card_type == "LEADER" and not str(row.get("health", "")).strip():
+
+    health = str(row.get("health", "")).strip()
+    if card_type == "LEADER" and not health:
         errors.append("LEADER cards require health")
-    if card_type == "CREATURE" and not str(row.get("power", "")).strip():
+    elif card_type and card_type != "LEADER" and health:
+        errors.append(f"{card_type} cards must not have health")
+
+    power = str(row.get("power", "")).strip()
+    if card_type == "CREATURE" and not power:
         errors.append("CREATURE cards require power")
-    if card_type in {"SPELL_MAIN", "SPELL_INTERUPT"} and str(row.get("defense", "")).strip():
+    elif card_type and card_type != "CREATURE" and power:
+        errors.append(f"{card_type} cards must not have power")
+    defense = str(row.get("defense", "")).strip()
+    no_defense_types = {"TRINKET", "SPELL_MAIN", "SPELL_INTERUPT"}
+    if card_type in no_defense_types and defense:
         errors.append(f"{card_type} cards must not have defense")
+    elif card_type and card_type not in no_defense_types and not defense:
+        errors.append(f"{card_type} cards require defense")
     return errors
 
 
@@ -51,6 +64,7 @@ def normalize_card_row(row: dict) -> dict:
         "power": optional_int(row.get("power")),
         "defense": optional_int(row.get("defense")),
         "set_name": str(row["set_name"]).strip(),
-        "numer": int(str(row["numer"]).strip()),
+        "number": int(str(row["number"]).strip()),
+        "cost": optional_int(row.get("cost")),
         "image_url": str(row.get("image_url", "")).strip() or None,
     }

@@ -10,7 +10,7 @@ export function SearchFilters({ values, onChange }: { values: SearchValues; onCh
       <select aria-label="Card type" value={values.type} onChange={(event) => update('type', event.target.value)}><option value="">All types</option>{(['LEADER', 'CREATURE', 'HABITAT', 'TRINKET', 'SPELL_MAIN', 'SPELL_INTERUPT'] as CardType[]).map((value) => <option key={value} value={value}>{value.replace('_', ' ')}</option>)}</select>
       <select aria-label="Color" value={values.color} onChange={(event) => update('color', event.target.value)}><option value="">All colors</option>{(['RED', 'PURPLE', 'BLUE', 'GREEN', 'YELLOW'] as Color[]).map((value) => <option key={value} value={value}>{value}</option>)}</select>
       <input aria-label="Set" value={values.set_name} onChange={(event) => update('set_name', event.target.value)} placeholder="Set name" />
-      <select aria-label="Sort" value={values.sort} onChange={(event) => update('sort', event.target.value)}><option value="name">Sort: name</option><option value="type">Sort: type</option><option value="set_name">Sort: set</option><option value="numer">Sort: number</option></select>
+      <select aria-label="Sort" value={values.sort} onChange={(event) => update('sort', event.target.value)}><option value="name">Sort: name</option><option value="type">Sort: type</option><option value="set_name">Sort: set</option><option value="number">Sort: number</option></select>
     </div>
   </div>
 }

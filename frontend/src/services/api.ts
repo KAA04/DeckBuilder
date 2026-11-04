@@ -20,7 +20,7 @@ export function apiError(error: unknown): string {
       const details = data.errors.map((item: { row: number; errors: string[] }) => `Row ${item.row}: ${item.errors.join(', ')}`).join(' | ')
       return `${data.error ?? 'Validation failed.'} ${details}`
     }
-    return data?.error ?? 'Something went wrong.'
+    return data?.error ?? data?.message ?? 'Something went wrong.'
   }
   return 'Something went wrong.'
 }

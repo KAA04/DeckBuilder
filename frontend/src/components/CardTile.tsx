@@ -11,7 +11,7 @@ export function CardTile({ card, onAdd, onOpen }: { card: Card; onAdd: () => voi
     <div className="card-tile-body">
       <div className="card-title-row"><strong>{card.name}</strong><span className="type-label">{card.type.replace('_', ' ')}</span></div>
       <div className="color-row">{[card.color1, card.color2].filter(Boolean).map((color) => <span className={`color-dot ${colorClass(color)}`} key={color} title={color ?? ''} />)}</div>
-      <span className="muted">{card.set_name} / {card.numer}</span>
+      <span className="muted">{card.set_name} / {card.number}</span>
     </div>
   </article>
 }
