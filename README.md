@@ -1,4 +1,4 @@
-# Cardforge Deck Builder
+# Critter Forge Deck Builder
 
 A full-stack, Archidekt-style trading-card deck builder using React/Vite/TypeScript, Flask, and Supabase. It works with the existing Supabase schema described in the project brief and does not create or alter tables.
 
@@ -27,3 +27,5 @@ To create the first admin, register a user, then set that user's `profiles.role`
 ## CSV import
 
 Required columns: `name,type,set_name,number`. Optional columns: `text,color1,color2,health,power,defense,cost,image_url`. Numeric values must be non-negative. `defense` is required for non-spell cards and must be blank for `SPELL_MAIN` and `SPELL_INTERUPT`. Enum values must match the schema, including the existing spelling `SPELL_INTERUPT`.
+
+Decks are limited to 70 cards. The deck builder can export a deck as a 7500x7350 PNG sheet with 10 flush columns and 7 flush rows of 750x1050 cards.

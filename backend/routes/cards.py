@@ -26,7 +26,9 @@ def search_cards():
     if sort not in SORTS:
         return jsonify({"error": "Invalid sort field."}), 400
 
-    query = g.supabase.table("cards").select("*", count="exact")
+    query = g.supabase.table("cards").select(
+        "id, name, text, color1, color2, type, health, power, defense, cost, set_name, number, image_url"
+    )
     if search:
         query = query.ilike("name", f"%{search}%")
     if card_type:
@@ -36,11 +38,12 @@ def search_cards():
     if set_name:
         query = query.ilike("set_name", f"%{set_name}%")
     start = (page - 1) * limit
-    result = query.order(sort).range(start, start + limit - 1).execute()
+    result = query.order(sort).range(start, start + limit).execute()
+    cards = result.data or []
     return jsonify({
-        "cards": result.data or [],
+        "cards": cards[:limit],
         "page": page,
         "limit": limit,
-        "total": result.count or 0,
-        "has_more": (result.count or 0) > start + len(result.data or []),
+        "total": None,
+        "has_more": len(cards) > limit,
     })

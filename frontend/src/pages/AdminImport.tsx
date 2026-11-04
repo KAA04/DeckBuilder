@@ -61,7 +61,7 @@ export function AdminImport() {
     { key: 'image_url', label: 'Image URL' },
   ]
   return <section className="page-shell narrow">
-    <div className="page-heading"><div><span className="eyebrow">ADMIN TOOLS</span><h1>Import cards</h1><p>Add cards manually or import a CSV.</p></div></div>
+    <div className="page-heading"><div><span className="eyebrow">ADMIN TOOLS</span><h1>Add critters</h1><p>Welcome new creatures, habitats, and treasures to the wilds.</p></div></div>
     <div className="import-box">
       <div className="import-tabs" role="tablist">
         <button className={activeTab === 'manual' ? 'active' : ''} role="tab" aria-selected={activeTab === 'manual'} onClick={() => { setActiveTab('manual'); clearStatus() }}>Manual entry</button>
@@ -76,11 +76,11 @@ export function AdminImport() {
           <label className="wide-field">Card text<textarea value={card.text} onChange={(event) => updateCard('text', event.target.value)} /></label>
           {fields.slice(3).map((field) => <label key={field.key}>{field.label}<input type={field.type ?? 'text'} value={card[field.key]} onChange={(event) => updateCard(field.key, event.target.value)} /></label>)}
         </div>
-        <button className="button primary" type="submit" disabled={busy}>{busy ? 'Adding...' : 'Add card'}</button>
+        <button className="button primary" type="submit" disabled={busy}>{busy ? 'Welcoming...' : 'Welcome card'}</button>
       </form> : <div className="csv-import-panel">
-        <label className="file-drop"><input type="file" accept=".csv,text/csv" onChange={(event) => selectFile(event.target.files?.[0] ?? null)} /><strong>{file ? file.name : 'Choose a CSV file'}</strong><span>Required: name, type, set_name, number</span></label>
+        <label className="file-drop"><input type="file" accept=".csv,text/csv" onChange={(event) => selectFile(event.target.files?.[0] ?? null)} /><strong>{file ? file.name : 'Choose a creature CSV'}</strong><span>Required: name, type, habitat, number</span></label>
         {preview.length > 0 && <div className="preview-wrap"><span className="eyebrow">PREVIEW</span><table><tbody>{preview.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => rowIndex === 0 ? <th key={cellIndex}>{cell}</th> : <td key={cellIndex}>{cell}</td>)}</tr>)}</tbody></table></div>}
-        <button className="button primary" disabled={!file || busy} onClick={() => void submit()}>{busy ? 'Importing...' : 'Validate and import'}</button>
+        <button className="button primary" disabled={!file || busy} onClick={() => void submit()}>{busy ? 'Welcoming...' : 'Validate and welcome'}</button>
       </div>}
       {error && <p className="error-message">{error}</p>}{message && <p className="success-message">{message}</p>}
     </div>

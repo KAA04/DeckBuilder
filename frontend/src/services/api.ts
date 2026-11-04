@@ -2,15 +2,25 @@ import axios from 'axios'
 
 import { supabase } from './supabase'
 
+let accessToken: string | null = null
+let tokenPromise: Promise<string | null> | null = null
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:5000/api',
 })
 
 api.interceptors.request.use(async (config) => {
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
+  if (!accessToken) {
+    tokenPromise ??= supabase.auth.getSession().then(({ data }) => data.session?.access_token ?? null).finally(() => { tokenPromise = null })
+    accessToken = await tokenPromise
+  }
+  const token = accessToken
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
+})
+
+supabase.auth.onAuthStateChange((_event, session) => {
+  accessToken = session?.access_token ?? null
 })
 
 export function apiError(error: unknown): string {

@@ -5,7 +5,8 @@ import { CardTile } from '../components/CardTile'
 import { LoadingState } from '../components/LoadingState'
 import { SearchFilters, type SearchValues } from '../components/SearchFilters'
 import { api, apiError } from '../services/api'
-import type { Card, CardsResponse, Deck, DeckCard } from '../types'
+import { exportDeckImage } from '../services/deckExport'
+import { MAX_DECK_SIZE, type Card, type CardsResponse, type Deck, type DeckCard } from '../types'
 
 const initialSearch: SearchValues = { search: '', type: '', color: '', set_name: '', sort: 'name' }
 
@@ -22,13 +23,18 @@ export function DeckBuilder() {
   const [error, setError] = useState('')
   const [activePanel, setActivePanel] = useState<'search' | 'deck'>('search')
   const [detail, setDetail] = useState<Card | null>(null)
+  const [exporting, setExporting] = useState(false)
 
   const loadDeck = async () => { try { const response = await api.get<Deck>(`/decks/${deckId}`); setDeck(response.data); setDeckName(response.data.name) } catch (err) { setError(apiError(err)) } finally { setLoading(false) } }
   const loadCards = async (nextPage = 1) => { setSearching(true); try { const response = await api.get<CardsResponse>('/cards', { params: { ...filters, page: nextPage, limit: 24 } }); setCards(nextPage === 1 ? response.data.cards : [...cards, ...response.data.cards]); setPage(nextPage); setHasMore(response.data.has_more) } catch (err) { setError(apiError(err)) } finally { setSearching(false) } }
   useEffect(() => { void loadDeck() }, [deckId])
-  useEffect(() => { const timer = window.setTimeout(() => void loadCards(), 350); return () => window.clearTimeout(timer) }, [filters, deckId])
+  useEffect(() => { const timer = window.setTimeout(() => void loadCards(), 120); return () => window.clearTimeout(timer) }, [filters, deckId])
   const add = async (card: Card) => {
     if (!deck) return
+    if (deck.card_count >= MAX_DECK_SIZE) {
+      setError(`Decks are limited to ${MAX_DECK_SIZE} cards.`)
+      return
+    }
     const previousDeck = deck
     const existing = deck.cards?.find((item) => item.card_id === card.id)
     const nextCards = existing
@@ -44,6 +50,10 @@ export function DeckBuilder() {
   }
   const setQuantity = async (item: DeckCard, quantity: number) => {
     if (!deck) return
+    if (deck.card_count - item.quantity + quantity > MAX_DECK_SIZE) {
+      setError(`Decks are limited to ${MAX_DECK_SIZE} cards.`)
+      return
+    }
     const previousDeck = deck
     const change = quantity - item.quantity
     const nextCards = quantity <= 0
@@ -56,6 +66,18 @@ export function DeckBuilder() {
     } catch (err) {
       setDeck(previousDeck)
       setError(apiError(err))
+    }
+  }
+  const exportDeck = async () => {
+    if (!deck) return
+    setExporting(true)
+    setError('')
+    try {
+      await exportDeckImage(deck.name, deck.cards ?? [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'The deck image could not be created.')
+    } finally {
+      setExporting(false)
     }
   }
   const rename = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -74,7 +96,7 @@ export function DeckBuilder() {
       setError(apiError(err))
     }
   }
-  if (loading) return <LoadingState label="Opening deck" />
+  if (loading) return <LoadingState label="Entering the den" />
   if (!deck) return <p className="error-message banner">{error || 'Deck not found.'}</p>
-  return <section className="builder-shell"><div className="builder-mobile-tabs"><button className={activePanel === 'search' ? 'active' : ''} onClick={() => setActivePanel('search')}>Card database</button><button className={activePanel === 'deck' ? 'active' : ''} onClick={() => setActivePanel('deck')}>My deck <span>{deck.card_count}</span></button></div><div className={`search-panel ${activePanel === 'search' ? 'mobile-active' : ''}`}><div className="panel-heading"><div><span className="eyebrow">CARD DATABASE</span><h1>Find your next move</h1></div><span className="result-count">{searching ? 'Searching...' : `${cards.length} shown`}</span></div><SearchFilters values={filters} onChange={(next) => { setFilters(next); setPage(1) }} /><div className="card-grid">{cards.map((card) => <CardTile key={card.id} card={card} onAdd={() => void add(card)} onOpen={() => setDetail(card)} />)}</div>{!searching && !cards.length && <div className="empty-state compact"><h2>No cards found</h2><p>Try a different search or filter.</p></div>}{hasMore && <button className="button ghost load-more" onClick={() => void loadCards(page + 1)}>Load more</button>}</div><aside className={`deck-panel ${activePanel === 'deck' ? 'mobile-active' : ''}`}><div className="deck-panel-heading"><span className="eyebrow">CURRENT DECK</span><form onSubmit={rename}><input name="name" value={deckName} onChange={(event) => setDeckName(event.target.value)} aria-label="Deck name" /></form><div className="deck-total"><strong>{deck.card_count}</strong><span>cards total</span></div></div><div className="deck-list">{(deck.cards ?? []).map((item) => <div className="deck-row" key={item.card_id}><div className="mini-art">{item.cards.image_url ? <img src={item.cards.image_url} alt="" /> : item.cards.name.slice(0, 1)}</div><div className="deck-row-name"><strong>{item.cards.name}</strong><span>{item.cards.type.replace('_', ' ')}</span></div><div className="quantity"><button aria-label={`Decrease ${item.cards.name}`} onClick={() => void setQuantity(item, item.quantity - 1)}>-</button><span>{item.quantity}</span><button aria-label={`Increase ${item.cards.name}`} onClick={() => void setQuantity(item, item.quantity + 1)}>+</button></div><button className="remove-button" aria-label={`Remove ${item.cards.name}`} onClick={() => void setQuantity(item, 0)}>x</button></div>)}{!deck.cards?.length && <div className="deck-empty"><span>01</span><p>Your deck is waiting.<br />Add cards from the database.</p></div>}</div></aside>{detail && <div className="modal-backdrop" onClick={() => setDetail(null)}><div className="card-detail" onClick={(event) => event.stopPropagation()}><button className="close-button" onClick={() => setDetail(null)}>x</button><div className="detail-art">{detail.image_url ? <img src={detail.image_url} alt={detail.name} /> : <span>{detail.name.slice(0, 2)}</span>}</div><div><span className="eyebrow">{detail.type.replace('_', ' ')}</span><h2>{detail.name}</h2><p>{detail.text || 'No card text available.'}</p><p className="muted">{detail.set_name} / {detail.number}</p><button className="button primary" onClick={() => { void add(detail); setDetail(null) }}>+ Add to deck</button></div></div></div>}</section>
+  return <section className="builder-shell"><div className="builder-mobile-tabs"><button className={activePanel === 'search' ? 'active' : ''} onClick={() => setActivePanel('search')}>Critter trail</button><button className={activePanel === 'deck' ? 'active' : ''} onClick={() => setActivePanel('deck')}>My deck <span>{deck.card_count}</span></button></div><div className={`search-panel ${activePanel === 'search' ? 'mobile-active' : ''}`}><div className="panel-heading"><div><span className="eyebrow">THE CRITTER TRAIL</span><h1>Find your next companion</h1></div><span className="result-count">{searching ? 'Sniffing...' : `${cards.length} spotted`}</span></div><SearchFilters values={filters} onChange={(next) => { setFilters(next); setPage(1) }} /><div className="card-grid">{cards.map((card) => <CardTile key={card.id} card={card} onAdd={() => void add(card)} onOpen={() => setDetail(card)} />)}</div>{!searching && !cards.length && <div className="empty-state compact"><h2>No critters found</h2><p>Try another trail, color, or habitat.</p></div>}{hasMore && <button className="button ghost load-more" onClick={() => void loadCards(page + 1)}>Follow the trail</button>}</div><aside className={`deck-panel ${activePanel === 'deck' ? 'mobile-active' : ''}`}><div className="deck-panel-heading"><span className="eyebrow">YOUR DECK DEN</span><form onSubmit={rename}><input name="name" value={deckName} onChange={(event) => setDeckName(event.target.value)} aria-label="Deck name" /></form><div className="deck-total"><strong>{deck.card_count}</strong><span>friends gathered</span></div><button className="button primary export-button" onClick={() => void exportDeck()} disabled={exporting || !deck.card_count}>{exporting ? 'Creating image...' : 'Export deck image'}</button></div><div className="deck-list">{(deck.cards ?? []).map((item) => <div className="deck-row" key={item.card_id}><div className="mini-art">{item.cards.image_url ? <img src={item.cards.image_url} alt="" /> : item.cards.name.slice(0, 1)}</div><div className="deck-row-name"><strong>{item.cards.name}</strong><span>{item.cards.type.replace('_', ' ')}</span></div><div className="quantity"><button aria-label={`Decrease ${item.cards.name}`} onClick={() => void setQuantity(item, item.quantity - 1)}>-</button><span>{item.quantity}</span><button aria-label={`Increase ${item.cards.name}`} onClick={() => void setQuantity(item, item.quantity + 1)}>+</button></div><button className="remove-button" aria-label={`Release ${item.cards.name}`} onClick={() => void setQuantity(item, 0)}>x</button></div>)}{!deck.cards?.length && <div className="deck-empty"><span>01</span><p>Your den is waiting.<br />Gather critters from the trail.</p></div>}</div></aside>{detail && <div className="modal-backdrop" onClick={() => setDetail(null)}><div className="card-detail" onClick={(event) => event.stopPropagation()}><button className="close-button" onClick={() => setDetail(null)}>x</button><div className="detail-art">{detail.image_url ? <img src={detail.image_url} alt={detail.name} /> : <span>{detail.name.slice(0, 2)}</span>}</div><div><span className="eyebrow">{detail.type.replace('_', ' ')}</span><h2>{detail.name}</h2><p>{detail.text || 'This critter has no story yet.'}</p><p className="muted">{detail.set_name} / {detail.number}</p><button className="button primary" onClick={() => { void add(detail); setDetail(null) }}>+ Gather friend</button></div></div></div>}</section>
 }

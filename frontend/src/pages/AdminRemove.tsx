@@ -36,7 +36,7 @@ export function AdminRemove() {
   }
 
   useEffect(() => {
-    const timer = window.setTimeout(() => void loadCards(), 350)
+    const timer = window.setTimeout(() => void loadCards(), 120)
     return () => window.clearTimeout(timer)
   }, [filters])
 
@@ -57,15 +57,15 @@ export function AdminRemove() {
   if (loading) return <LoadingState label="Loading cards" />
 
   return <section className="page-shell">
-    <div className="page-heading"><div><span className="eyebrow">ADMIN TOOLS</span><h1>Remove cards</h1><p>Search the card database and remove cards permanently.</p></div></div>
+    <div className="page-heading"><div><span className="eyebrow">ADMIN TOOLS</span><h1>Manage cards</h1><p>Search the wilds and release cards from the collection.</p></div></div>
     {error && <p className="error-message banner">{error}</p>}
     <div className="admin-card-search">
       <SearchFilters values={filters} onChange={(next) => { setFilters(next); setPage(1) }} />
       <div className="panel-heading"><span className="result-count">{searching ? 'Searching...' : `${cards.length} shown`}</span></div>
       <div className="card-grid">{cards.map((card) => <CardTile key={card.id} card={card} onAdd={() => setTarget(card)} onOpen={() => setTarget(card)} actionLabel="Remove" actionClass="remove-card-button" />)}</div>
-      {!searching && !cards.length && <div className="empty-state compact"><h2>No cards found</h2><p>Try a different search or filter.</p></div>}
+      {!searching && !cards.length && <div className="empty-state compact"><h2>No critters found</h2><p>Try a different trail or habitat filter.</p></div>}
       {hasMore && <button className="button ghost load-more" onClick={() => void loadCards(page + 1)}>Load more</button>}
     </div>
-    {target && <div className="modal-backdrop" onClick={() => setTarget(null)}><div className="site-modal" role="dialog" aria-modal="true" aria-labelledby="remove-card-title" onClick={(event) => event.stopPropagation()}><button className="close-button" aria-label="Close" onClick={() => setTarget(null)}>x</button><span className="eyebrow">REMOVE CARD</span><h2 id="remove-card-title">Remove {target.name}?</h2><p>This permanently removes the card from the database and any decks using it.</p><div className="site-modal-actions"><button className="button ghost" onClick={() => setTarget(null)}>Cancel</button><button className="button primary danger-button" onClick={() => { void remove() }}>Remove card</button></div></div></div>}
+    {target && <div className="modal-backdrop" onClick={() => setTarget(null)}><div className="site-modal" role="dialog" aria-modal="true" aria-labelledby="remove-card-title" onClick={(event) => event.stopPropagation()}><button className="close-button" aria-label="Close" onClick={() => setTarget(null)}>x</button><span className="eyebrow">RELEASE CARD</span><h2 id="remove-card-title">Release {target.name}?</h2><p>This permanently releases the card from the wilds and any decks using it.</p><div className="site-modal-actions"><button className="button ghost" onClick={() => setTarget(null)}>Keep card</button><button className="button primary danger-button" onClick={() => { void remove() }}>Release card</button></div></div></div>}
   </section>
 }

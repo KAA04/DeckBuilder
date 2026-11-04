@@ -1,5 +1,6 @@
 export type CardType = 'LEADER' | 'CREATURE' | 'HABITAT' | 'TRINKET' | 'SPELL_MAIN' | 'SPELL_INTERUPT'
 export type Color = 'RED' | 'PURPLE' | 'BLUE' | 'GREEN' | 'YELLOW'
+export const MAX_DECK_SIZE = 70
 
 export interface Card {
   id: number
@@ -42,6 +43,6 @@ export interface CardsResponse {
   cards: Card[]
   page: number
   limit: number
-  total: number
+  total: number | null
   has_more: boolean
 }

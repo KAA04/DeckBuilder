@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Session } from '@supabase/supabase-js'
 
 import { api } from '../services/api'
@@ -18,16 +18,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const profilePromise = useRef<Promise<void> | null>(null)
 
   const loadProfile = async () => {
-    try {
-      const response = await api.get('/auth/me')
-      setProfile(response.data.profile)
-    } catch {
-      setProfile(null)
-    } finally {
-      setLoading(false)
-    }
+    if (profilePromise.current) return profilePromise.current
+    const request = (async () => {
+      try {
+        const response = await api.get('/auth/me')
+        setProfile(response.data.profile)
+      } catch {
+        setProfile(null)
+      } finally {
+        setLoading(false)
+      }
+    })()
+    profilePromise.current = request
+    await request
+    profilePromise.current = null
   }
 
   useEffect(() => {

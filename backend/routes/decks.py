@@ -3,12 +3,16 @@ from flask import Blueprint, g, jsonify, request
 from services.supabase import owned_deck, require_auth
 
 decks_bp = Blueprint("decks", __name__, url_prefix="/api/decks")
+MAX_DECK_SIZE = 70
 
 
 def deck_with_cards(deck_id: str):
     result = (
         g.supabase.table("decks")
-        .select("*, deck_cards(card_id, quantity, cards(*))")
+        .select(
+            "id, user_id, name, description, updated_at, "
+            "deck_cards(card_id, quantity, cards(id, name, text, color1, color2, type, health, power, defense, cost, set_name, number, image_url))"
+        )
         .eq("id", deck_id)
         .eq("user_id", g.user.id)
         .maybe_single()
@@ -26,7 +30,7 @@ def deck_with_cards(deck_id: str):
 def list_decks():
     result = (
         g.supabase.table("decks")
-        .select("*, deck_cards(quantity)")
+        .select("id, user_id, name, description, updated_at, deck_cards(quantity)")
         .eq("user_id", g.user.id)
         .order("updated_at", desc=True)
         .execute()
@@ -134,6 +138,19 @@ def add_card(deck_id):
     )
     existing_quantity = existing.data[0]["quantity"] if existing.data else 0
     new_quantity = quantity + existing_quantity
+    current_total = sum(
+        item["quantity"]
+        for item in (
+            g.supabase.table("deck_cards")
+            .select("quantity")
+            .eq("deck_id", deck_id)
+            .execute()
+            .data
+            or []
+        )
+    )
+    if current_total + quantity > MAX_DECK_SIZE:
+        return jsonify({"error": f"Decks are limited to {MAX_DECK_SIZE} cards."}), 400
     result = g.supabase.table("deck_cards").upsert(
         {"deck_id": deck_id, "card_id": card_id, "quantity": new_quantity},
         on_conflict="deck_id,card_id",
@@ -153,6 +170,17 @@ def update_card_quantity(deck_id, card_id):
         return jsonify({"error": "quantity must be an integer."}), 400
     if quantity < 0:
         return jsonify({"error": "Quantity cannot be negative."}), 400
+    current_cards = (
+        g.supabase.table("deck_cards")
+        .select("card_id, quantity")
+        .eq("deck_id", deck_id)
+        .execute()
+        .data
+        or []
+    )
+    current_total = sum(item["quantity"] for item in current_cards if item["card_id"] != card_id)
+    if current_total + quantity > MAX_DECK_SIZE:
+        return jsonify({"error": f"Decks are limited to {MAX_DECK_SIZE} cards."}), 400
     query = g.supabase.table("deck_cards").delete() if quantity == 0 else g.supabase.table("deck_cards").update({"quantity": quantity})
     result = query.eq("deck_id", deck_id).eq("card_id", card_id).execute()
     return jsonify({"quantity": 0 if quantity == 0 else result.data[0]["quantity"]})
