@@ -86,3 +86,12 @@ def import_one_card():
         message = getattr(error, "message", None) or str(error)
         return jsonify({"error": f"Supabase rejected the card: {message}"}), 422
     return jsonify({"imported": len(result.data or [])}), 201
+
+
+@admin_bp.delete("/cards/<int:card_id>")
+@require_admin
+def remove_card(card_id):
+    result = g.supabase.table("cards").delete().eq("id", card_id).select("id").execute()
+    if not result.data:
+        return jsonify({"error": "Card not found."}), 404
+    return "", 204
