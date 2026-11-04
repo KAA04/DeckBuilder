@@ -115,7 +115,13 @@ def add_card(deck_id):
         return jsonify({"error": "card_id and quantity must be integers."}), 400
     if quantity < 1:
         return jsonify({"error": "Quantity must be at least 1."}), 400
-    card = g.supabase.table("cards").select("id").eq("id", card_id).maybe_single().execute()
+    card = (
+        g.supabase.table("cards")
+        .select("id")
+        .eq("id", card_id)
+        .limit(1)
+        .execute()
+    )
     if not card.data:
         return jsonify({"error": "Card not found."}), 404
     existing = (
@@ -123,10 +129,11 @@ def add_card(deck_id):
         .select("quantity")
         .eq("deck_id", deck_id)
         .eq("card_id", card_id)
-        .maybe_single()
+        .limit(1)
         .execute()
     )
-    new_quantity = quantity + (existing.data["quantity"] if existing.data else 0)
+    existing_quantity = existing.data[0]["quantity"] if existing.data else 0
+    new_quantity = quantity + existing_quantity
     result = g.supabase.table("deck_cards").upsert(
         {"deck_id": deck_id, "card_id": card_id, "quantity": new_quantity},
         on_conflict="deck_id,card_id",
